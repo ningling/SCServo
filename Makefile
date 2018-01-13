@@ -11,15 +11,15 @@ LIBNAME = lib$(LIBSRC:.cpp=).a
 BINDIR=./bin/
 BINSRCDIR=./utils/
 BINSRC = $(notdir $(wildcard $(BINSRCDIR)*.cpp))
-BINNAME = $(BINSRC:.cpp=.cmd)
+BINNAME = $(BINSRC:.cpp=.out)
 #define default action
 default:
 	@echo "make factor project v1.0"
 	@echo "use make all"
-	@echo $(BINNAME)
+	
 all: $(BINNAME) $(LIBNAME)
 #all: $(LIBNAME)
-$(BINNAME): %.cmd:$(BINSRCDIR)%.cpp $(LIBNAME)
+$(BINNAME): %.out:$(BINSRCDIR)%.cpp $(LIBNAME)
 	$(CC) $< $(CFLAGS) -L$(LIBDIR) -l$(LIBSRC:.cpp=) $(INCLUDE) -o $(BINDIR)$*
 
 $(LIBNAME): $(LIBOBJ)

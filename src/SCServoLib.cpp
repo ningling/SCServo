@@ -45,9 +45,11 @@ int SerialInit(char *devName, int baudrate)
   options.c_cflag &=~CSTOPB;
   options.c_cflag |= CLOCAL;
   options.c_cflag |= CREAD;
+  options.c_cflag &=~CRTSCTS;
+  options.c_iflag &=~(IXON | IXOFF | IXANY);
 
-  options.c_cc[VTIME]=1;
-  options.c_cc[VMIN]=4;
+  options.c_cc[VTIME]=0;
+  options.c_cc[VMIN]=0;
 
   options.c_ispeed=baudrate;
   options.c_ospeed=baudrate;

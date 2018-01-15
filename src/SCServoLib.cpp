@@ -337,9 +337,9 @@ char SCServo::ChkSum()
   int sum=0;
   int counter=0;
   int length=(int)CmdString[3];
-  char ch;
+  unsigned char ch;
   #ifdef DEBUG
-    printf("ChkSum():Servo %02x Data to be checked:",CmdString[2]);
+    printf("ChkSum():Servo %02X Data to be checked:",CmdString[2]);
   #endif
 
   for (counter=0;counter<=length;counter++)
@@ -350,9 +350,9 @@ char SCServo::ChkSum()
     #endif
     sum+=(int)ch;
   }
-  ch=(char)(~(sum&0xFF));
+  ch=(unsigned char)(~(sum&0xFF));
   #ifdef DEBUG
-    printf("\nChecksum is:%02x\n",ch);
+    printf("\nChecksum is:%02X\n",ch);
   #endif
   return ch;
 }

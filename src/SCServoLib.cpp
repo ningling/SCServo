@@ -12,13 +12,57 @@
 int SerialClose(int fd)
 {
   tcflush(fd,TCIOFLUSH);
+  //fcntl(fd,F_SETFL,0);
   close(fd);
   return 1;
 }
 
+//Initialization of serial port. Will return serial port file handle if success.
+//return -1 if open failed.
+//return -2 if the baudrate is NOT one of the 5 speed options.The 5 speed options are:
+//1M,500k,115200,57600 and 38400
+//For Feetech's SCServos, they can also support 250k, 128k and 76800bps. But those
+//are NOT supported by cfsetspeed. It will be too complicated to implement the custom_divisor
+//So this will be a future task.
+//TODO: Implement the support for 250k, 128k and 76800.
+
 int SerialInit(char *devName, int baudrate)
 {
-  struct termios2 options;
+  struct termios options;
+  speed_t speed = B0;
+
+  switch (baudrate){
+    case 1000000:
+      speed=B1000000;
+      break;
+    case 500000:
+      speed=B500000;
+      break;
+    /*case 250000:
+      speed=B250000;
+      break;
+    case 128000:
+      speed=B128000;
+      break;*/
+    case 115200:
+      speed=B115200;
+      break;
+    /*case 76800:
+      speed=B76800;
+      break; */
+    case 57600:
+      speed=B57600;
+      break;
+    case 38400:
+      speed=B38400;
+      break;
+    default:
+      #ifdef DEBUG
+        printf("baudrate are NOT one of the 5 candidates:\n");
+        printf("1,000,000bps;500,000bps;115200bps;57,600bps and 38,400bps\n");
+      #endif
+      return -2;
+  }
 
   int fd=open(devName,O_RDWR|O_NOCTTY|O_NONBLOCK);
 
@@ -34,26 +78,18 @@ int SerialInit(char *devName, int baudrate)
   #ifdef DEBUG
     printf("Serial openned:%s@%d\n",devName,baudrate);
   #endif
-
   tcflush(fd,TCIOFLUSH);
-
-  ioctl(fd,TCGETS2, &options);
+  tcgetattr(fd,&options);
 
   options.c_cflag &=~CSIZE;
   options.c_cflag |= CS8;
   options.c_cflag &=~PARENB;
   options.c_cflag &=~CSTOPB;
-  options.c_cflag |= CLOCAL;
-  options.c_cflag |= CREAD;
-  options.c_cflag &=~CRTSCTS;
-  options.c_iflag &=~(IXON | IXOFF | IXANY);
+  options.c_iflag &=~(IXON|IXOFF);
+  cfmakeraw(&options);
+  cfsetspeed(&options,speed);
+	tcsetattr(fd,TCSANOW,&options);
 
-  options.c_cc[VTIME]=0;
-  options.c_cc[VMIN]=0;
-
-  options.c_ispeed=baudrate;
-  options.c_ospeed=baudrate;
-  ioctl(fd,TCSETS2,&options);
   return fd;
 }
 
@@ -99,8 +135,44 @@ void SCServo::SetID(int ID)
   WriteData(WRITE_PROTECT,1);
 }
 
-void SCServo::SetBaudRate(int baudrateID)
+//Return 1 if succsss
+//return -2 if baudrate is NOT one of the 5 candidates.
+int SCServo::SetBaudRate(int baudrate)
 {
+  int baudrateID=0;
+  switch (baudrate){
+    case 1000000:
+      baudrateID=BR1000000;
+      break;
+    case 500000:
+      baudrateID=BR500000;
+      break;
+    /*case 250000:
+      speed=B250000;
+      break;
+    case 128000:
+      speed=B128000;
+      break;*/
+    case 115200:
+      baudrateID=BR115200;
+      break;
+    /*case 76800:
+      speed=B76800;
+      break; */
+    case 57600:
+      baudrateID=BR57600;
+      break;
+    case 38400:
+      baudrateID=BR38400;
+      break;
+    default:
+      #ifdef DEBUG
+        printf("baudrate are NOT one of the 5 candidates:\n");
+        printf("1,000,000bps;500,000bps;115200bps;57,600bps and 38,400bps\n");
+      #endif
+      return -2;
+  }
+
   //Unlock write
   CmdString[6]=0x0;
   WriteData(WRITE_PROTECT,1);
@@ -111,7 +183,7 @@ void SCServo::SetBaudRate(int baudrateID)
   //Lock write
   CmdString[6]=0x01;
   WriteData(WRITE_PROTECT,1);
-
+  return 0;
 }
 
 int SCServo::GetCurrentPos()
@@ -209,10 +281,17 @@ int SCServo::GetAnswer()
 {
   int bytes=0;
   ioctl(serialPort,FIONREAD,&bytes);
-  int counter=0;
+  #ifdef DEBUG
+    printf("FIONREAD=%d bytes",bytes);
+  #endif
 
+
+
+  int counter=0;
+  counter=bytes;
   if (bytes!=0)
   {
+
     counter=read(serialPort,AnsString,4);
     #ifdef DEBUG
       printf("GetAnswer():Servo %02x Data Length is %d\n",AnsString[2],AnsString[3]);

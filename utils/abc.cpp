@@ -12,20 +12,15 @@ int main()
 {
 	int fd;
 	char devName[]="/dev/ttyUSB0";
-  int baudrate=1000000;
-  //char ch;
-  int currentPos=-1;
+  int baudrate=115200;
+
+	int currentPos=-1;
   printf("Version %s\n", VERSION);
   #ifdef DEBUG
     printf("Debug enabled\n");
   #endif
 
-  //fd=SerialInit(devName,baudrate);
-	struct termios2 options;
-	int serial;
-	//fd=open(devName,O_RDWR|O_NOCTTY|O_NONBLOCK);
-	//fcntl(fd, F_SETFL,0);
-	fd=open(devName,O_RDWR|O_NOCTTY);
+  fd=SerialInit(devName,baudrate);
 
 	if (fd < 0)
 	{
@@ -36,80 +31,12 @@ int main()
 		return -1 ;
 	}
 
+
 	#ifdef DEBUG
-		printf("Serial openned:%s@%d\n",devName,baudrate);
-	#endif
-
-	ioctl(fd, TIOCMGET, &serial);
-	if (serial & TIOCM_RTS)
-			puts("TIOCM_RTS is set");
-	else
-			puts("TIOCM_RTS is NOT set");
-
-	if (serial & TIOCM_DTR)
-			puts("TIOCM_DTR is enabled");
-	else
-			puts("TIOCM_DTR is NOT enabled");
-
-	//usleep(1000000);
-
-	tcflush(fd,TCIOFLUSH);
-
-	ioctl(fd,TCGETS2, &options);
-
-	if (options.c_cflag&CREAD)
-		puts("CREAD is enabled");
-	else
-		puts("CREAD is NOT enable!");
-
-	if (options.c_cflag&(IXON|IXOFF))
-		puts("IXON//OFF is enabled");
-	else
-		puts("IXON//OFF is NOT enable!");
-
-	options.c_cflag &=~CSIZE;
-	options.c_cflag |= CS8;
-	options.c_cflag &=~PARENB;
-	options.c_cflag &=~CSTOPB;
-	//options.c_cflag |= CLOCAL;
-	//options.c_cflag |= CREAD;
-	options.c_cflag |= CRTSCTS;
-
-
-	//options.c_cflag &=~CRTSCTS;
-
-
-	options.c_iflag &=~(IXON | IXOFF);
-	//options.c_iflag &=~IGNBRK;
-	//options.c_lflag=0;	//no signaling chars, no echo,
-											//no canonical processing
-	//options.c_oflag=0;	//no remapping, no delays.
-	/* setup for non-canonical mode */
-	//options.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
-	//options.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-	//options.c_oflag &= ~OPOST;
-
-	//options.c_cc[VTIME]=0;
-	//options.c_cc[VMIN]=0;
-
-	options.c_ispeed=baudrate;
-	options.c_ospeed=baudrate;
-	tcflush(fd,TCIOFLUSH);
-	ioctl(fd,TCSETS2,&options);
-
-	usleep(1000000);
-	tcflush(fd,TCIOFLUSH);
-	ioctl(fd,TCGETS2,&options);
-	puts("After setting:");
-	if (options.c_cflag&(IXON|IXOFF))
-		puts("IXON//OFF is enabled");
-	else
-		puts("IXON//OFF is NOT enable!");
-
-  #ifdef DEBUG
     printf("__________________________________________________\n");
   #endif
   SCServo myServo4(fd,0x04);
+
   #ifdef DEBUG
     printf("__________________________________________________\n");
   #endif
@@ -121,9 +48,9 @@ int main()
   #ifdef DEBUG
     printf("__________________________________________________\n");
   #endif
-
-  currentPos=myServo4.GetCurrentPos();
-  printf("Servo#4 Current Pos is:%d\n",currentPos);
+	
+  //currentPos=myServo4.GetCurrentPos();
+  //printf("Servo#4 Current Pos is:%d\n",currentPos);
   //currentPos=myServo3.GetCurrentPos();
   //printf("Servo#3 Current Pos is:%d\n",currentPos);
   //currentPos=myServo2.GetCurrentPos();
@@ -131,6 +58,9 @@ int main()
   //myServo4.SetPos(0);
   //myServo4.SetPos(1023);
   //myServo4.SetPos(511);
+	//myServo4.SetBaudRate(115200);
+	//myServo2.SetBaudRate(115200);
+	//myServo3.SetBaudRate(115200);
 	SerialClose(fd);
   printf("Serial port %s closed!\n",devName);
 	return 0;

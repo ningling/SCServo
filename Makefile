@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS= -std=c++11  -g
-INCLUDE=-I ./includes
+INCLUDE=-I./includes -I./external/tclap-1.2.2/include
 OBJDIR=./obj/
 LIBDIR=./lib/
 LIBSRCDIR=./src/
@@ -16,7 +16,7 @@ BINNAME = $(BINSRC:.cpp=.out)
 default:
 	@echo "make factor project v1.0"
 	@echo "use make all"
-	
+
 all: $(BINNAME) $(LIBNAME)
 #all: $(LIBNAME)
 $(BINNAME): %.out:$(BINSRCDIR)%.cpp $(LIBNAME)

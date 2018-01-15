@@ -24,20 +24,19 @@
 //Definition of Baudrate
 #define BR1000000     0x00
 #define BR500000      0x01
-#define BR250000      0x02
-#define BR128000      0x03
+//#define BR250000      0x02
+//#define BR128000      0x03
 #define BR115200      0x04
-#define BR76800       0x05
+//#define BR76800       0x05
 #define BR57600       0x06
 #define BR38400       0x07
 
 
-#define RES_DELAY 500000 //Define the delay between send command and receive message in us.
-#define VERSION "1.2.13:Test Makefile"
+#define RES_DELAY 10000 //Define the delay between send command and receive message in us.
+#define VERSION "1.3.0: Testing Serial Baudrate"
 
 int SerialInit(char*,int);
 int SerialClose(int);
-
 
 /*******************************************************************************
 Command String for FeeTech Servo structure is like the following:
@@ -62,7 +61,7 @@ public:
   void SetID(int);
   //Baudrate is limited to 8 values. Please check the #define part or refer to the document.
   //ex. myServo.SetBaudRate(BR115200);
-  void SetBaudRate(int);
+  int SetBaudRate(int);
 private:
   int serialPort;
   char CtlTable[64];
@@ -77,14 +76,15 @@ private:
 
 };
 
+/*
 struct termios2
 {
-  tcflag_t c_iflag;		/* input mode flags */
-  tcflag_t c_oflag;		/* output mode flags */
-  tcflag_t c_cflag;		/* control mode flags */
-  tcflag_t c_lflag;		/* local mode flags */
-  cc_t c_line;			/* line discipline */
-  cc_t c_cc[NCCS];		/* control characters */
-  speed_t c_ispeed;		/* input speed */
-  speed_t c_ospeed;		/* output speed */
-};
+  tcflag_t c_iflag;		// input mode flags
+  tcflag_t c_oflag;		/* output mode flags
+  tcflag_t c_cflag;		/* control mode flags
+  tcflag_t c_lflag;		/* local mode flags
+  cc_t c_line;			/* line discipline
+  cc_t c_cc[NCCS];		/* control characters
+  speed_t c_ispeed;		/* input speed
+  speed_t c_ospeed;		/* output speed
+};*/

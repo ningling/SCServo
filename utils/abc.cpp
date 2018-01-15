@@ -26,24 +26,6 @@ int main()
 	//fd=open(devName,O_RDWR|O_NOCTTY|O_NONBLOCK);
 	//fcntl(fd, F_SETFL,0);
 	fd=open(devName,O_RDWR|O_NOCTTY);
-	ioctl(fd, TIOCMGET, &serial);
-	if (serial & TIOCM_RTS)
-			puts("TIOCM_RTS is set");
-	else
-			puts("TIOCM_RTS is NOT set");
-
-	//serial|=TIOCM_DTR;
-	//serial|=TIOCM_RTS;
-	//ioctl(fd,TIOCMSET,&serial);
-	//getchar();
-
-	if (serial & TIOCM_DTR)
-			puts("TIOCM_DTR is enabled");
-	else
-			puts("TIOCM_DTR is NOT enabled");
-
-	usleep(1000000);
-
 
 	if (fd < 0)
 	{
@@ -58,9 +40,32 @@ int main()
 		printf("Serial openned:%s@%d\n",devName,baudrate);
 	#endif
 
+	ioctl(fd, TIOCMGET, &serial);
+	if (serial & TIOCM_RTS)
+			puts("TIOCM_RTS is set");
+	else
+			puts("TIOCM_RTS is NOT set");
+
+	if (serial & TIOCM_DTR)
+			puts("TIOCM_DTR is enabled");
+	else
+			puts("TIOCM_DTR is NOT enabled");
+
+	//usleep(1000000);
+
 	tcflush(fd,TCIOFLUSH);
 
 	ioctl(fd,TCGETS2, &options);
+
+	if (options.c_cflag&CREAD)
+		puts("CREAD is enabled");
+	else
+		puts("CREAD is NOT enable!");
+
+	if (options.c_cflag&(IXON|IXOFF))
+		puts("IXON//OFF is enabled");
+	else
+		puts("IXON//OFF is NOT enable!");
 
 	options.c_cflag &=~CSIZE;
 	options.c_cflag |= CS8;
@@ -68,13 +73,13 @@ int main()
 	options.c_cflag &=~CSTOPB;
 	//options.c_cflag |= CLOCAL;
 	//options.c_cflag |= CREAD;
-	//options.c_cflag |= CRTSCTS;
+	options.c_cflag |= CRTSCTS;
 
 
 	//options.c_cflag &=~CRTSCTS;
 
 
-	//options.c_iflag &=~(IXON | IXOFF | IXANY);
+	options.c_iflag &=~(IXON | IXOFF);
 	//options.c_iflag &=~IGNBRK;
 	//options.c_lflag=0;	//no signaling chars, no echo,
 											//no canonical processing
@@ -91,6 +96,15 @@ int main()
 	options.c_ospeed=baudrate;
 	tcflush(fd,TCIOFLUSH);
 	ioctl(fd,TCSETS2,&options);
+
+	usleep(1000000);
+	tcflush(fd,TCIOFLUSH);
+	ioctl(fd,TCGETS2,&options);
+	puts("After setting:");
+	if (options.c_cflag&(IXON|IXOFF))
+		puts("IXON//OFF is enabled");
+	else
+		puts("IXON//OFF is NOT enable!");
 
   #ifdef DEBUG
     printf("__________________________________________________\n");

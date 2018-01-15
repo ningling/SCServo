@@ -2,7 +2,7 @@
 #include <iostream>
 #include <algorithm>
 #include <tclap/CmdLine.h>
-
+#include <SCServoLib.h>
 int main(int argc, char** argv)
 {
 
@@ -41,20 +41,24 @@ int main(int argc, char** argv)
 	cmd.parse( argc, argv );
 
 	// Get the value parsed by each arg.
-	std::string name = nameArg.getValue();
+	std::string devname = nameArg.getValue();
 	int baudrate=baudRate.getValue();
 	bool reverseName = reverseSwitch.getValue();
 	printf("Baudrate is: %d\n", baudrate);
 	// Do what you intend.
 	if ( reverseName )
 	{
-		std::reverse(name.begin(),name.end());
-		std::cout << "My name (spelled backwards) is: " << name << std::endl;
+		std::reverse(devname.begin(),devname.end());
+		std::cout << "My name (spelled backwards) is: " << devname << std::endl;
 	}
 	else
-		std::cout << "My name is: " << name << std::endl;
+		std::cout << "My name is: " << devname << std::endl;
+
+	int fd=SerialInit(devname,0x04);
 
 
 	} catch (TCLAP::ArgException &e)  // catch any exceptions
 	{ std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl; }
+	
+	
 }

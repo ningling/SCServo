@@ -1,4 +1,5 @@
 #define DEBUG 1
+//#define DEBUG2 1
 //Definition of commands
 #define CMD_PING        0x01
 #define CMD_READ        0x02
@@ -35,9 +36,9 @@
 #define RES_DELAY 10000 //Define the delay between send command and receive message in us.
 #define VERSION "1.3.0: Testing Serial Baudrate"
 
-int SerialInit(char*,int);
+int SerialInit(char *,int);
 int SerialClose(int);
-
+int VerifyBaudrate(int);
 /*******************************************************************************
 Command String for FeeTech Servo structure is like the following:
 ____________________________________________________________________
@@ -53,15 +54,17 @@ Checksum: ~((ID+length+instruction+parameters)&0xFF).
 class SCServo
 {
 public:
-  SCServo(int fd, int ID); //Initialize Servo object with serial device(fd) and Servo ID(ID)
+  SCServo();
   unsigned char Ping();
   int ServoID;
-  int GetCurrentPos();
-  int SetPos(int);
-  void SetID(int);
-  //Baudrate is limited to 8 values. Please check the #define part or refer to the document.
-  //ex. myServo.SetBaudRate(BR115200);
-  int SetBaudRate(int);
+  int Init(int fd,int ID);    //Initialize Servo object with serial device(fd) and Servo ID(ID)
+  int GetCurrentPos();  //return the current position of a servo
+  int SetPos(int);      //Input parameter is the position of a servo. value is 0-1023
+  int SetID(int);
+
+  int SetBaudRate(int); //Baudrate is limited to 5 values. Please check the #define part or refer to the document.
+                        //ex. myServo.SetBaudRate(115200);
+
 private:
   int serialPort;
   char CtlTable[64];
@@ -72,19 +75,8 @@ private:
   void ReadData(int,int);
   void WriteData(int,int);
   void GetCtlTable();
+  int Unlock();
+  int Lock();
 
 
 };
-
-/*
-struct termios2
-{
-  tcflag_t c_iflag;		// input mode flags
-  tcflag_t c_oflag;		/* output mode flags
-  tcflag_t c_cflag;		/* control mode flags
-  tcflag_t c_lflag;		/* local mode flags
-  cc_t c_line;			/* line discipline
-  cc_t c_cc[NCCS];		/* control characters
-  speed_t c_ispeed;		/* input speed
-  speed_t c_ospeed;		/* output speed
-};*/

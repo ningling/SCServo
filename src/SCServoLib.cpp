@@ -9,6 +9,26 @@
 
 #include "SCServoLib.h"
 
+int VerifyBaudrate(int baudrate)
+{
+  switch (baudrate){
+    case 1000000:
+      return 1;
+    case 500000:
+      return 1;
+    case 115200:
+      return 1;
+    case 57600:
+      return 1;
+    case 38400:
+      return 1;
+    default:
+      #ifdef DEBUG2
+        printf("Baudrate %dbps NOT supported!\n",baudrate);
+      #endif
+      return -1;
+  }
+}
 int SerialClose(int fd)
 {
   tcflush(fd,TCIOFLUSH);
@@ -93,8 +113,17 @@ int SerialInit(char *devName, int baudrate)
   return fd;
 }
 
+SCServo::SCServo()
+{
 
-SCServo::SCServo(int fd, int ID)
+}
+
+//Initialization of SCServo. Return Value:
+//-1:NOT founded.
+//1: Founded.
+//
+
+int SCServo::Init(int fd, int ID)
 {
   CmdString[0]=0xFF;
   CmdString[1]=0xFF;
@@ -110,7 +139,9 @@ SCServo::SCServo(int fd, int ID)
   else
   {
     printf("SC Servo #%d init failed\n",ID);
+    return -1;
   }
+  return 1;
 }
 
 int SCServo::SetPos(int targetPos)
@@ -121,25 +152,44 @@ int SCServo::SetPos(int targetPos)
   return 1;
 }
 
-void SCServo::SetID(int ID)
+//Return -1: Unlock failed.
+//Return -2: Write verification failed.
+//Return 1: Success.
+int SCServo::SetID(int ID)
 {
   //Unlock write
-  CmdString[6]=0x0;
-  WriteData(WRITE_PROTECT,1);
+  //Unlock write
+  int lockStatus=Unlock();
+  if (lockStatus<0)
+  {
+    return -1;
+  }
 
   CmdString[6]=ID&0xFF;
   WriteData(SERVO_ID,1);
-
+  ServoID=ID;
+  CmdString[2]=ServoID;
   //Lock write
-  CmdString[6]=0x01;
-  WriteData(WRITE_PROTECT,1);
+  Lock();
+  ReadData(SERVO_ID,1);
+  if (AnsString[2]!=ServoID)
+  {
+    #ifdef DEBUG
+      printf("ID is NOT written. The current ID in 0x%2X is %d",SERVO_ID,AnsString[2]);
+    #endif
+    return -2;
+  }
+  return 1;
 }
 
 //Return 1 if succsss
 //return -2 if baudrate is NOT one of the 5 candidates.
+//return -1 if unlock fail.
 int SCServo::SetBaudRate(int baudrate)
 {
   int baudrateID=0;
+  int lockStatus;
+
   switch (baudrate){
     case 1000000:
       baudrateID=BR1000000;
@@ -174,16 +224,66 @@ int SCServo::SetBaudRate(int baudrate)
   }
 
   //Unlock write
-  CmdString[6]=0x0;
-  WriteData(WRITE_PROTECT,1);
+  lockStatus=Unlock();
+  if (lockStatus<0)
+  {
+    return -1;
+  }
 
   CmdString[6]=baudrateID&0xFF;
   WriteData(BUS_BAUDRATE,1);
 
   //Lock write
+  Lock();
+  return 0;
+}
+
+//Return Value:
+//-1: Lock fail, Value on 0x30 is NOT 1
+//1: Locked.
+int SCServo::Lock()
+{
   CmdString[6]=0x01;
   WriteData(WRITE_PROTECT,1);
-  return 0;
+  ReadData(WRITE_PROTECT,1);
+  if (AnsString[5]!=1)
+  {
+    #ifdef DEBUG
+      printf("Locked Failed. Value on 0x30 is %02X\n",AnsString[5]);
+    #endif
+    return -1;
+  }
+
+  #ifdef DEBUG
+    printf("EPROM Locked. EPROM is now write protected.\n");
+  #endif
+
+  return 1;
+
+}
+
+//Return Value:
+//-1: Unlock fail, Value on 0x30 is NOT 0
+//1: Unlocked.
+int SCServo::Unlock()
+{
+  CmdString[6]=0x00;
+  WriteData(WRITE_PROTECT,1);
+  ReadData(WRITE_PROTECT,1);
+  if (AnsString[5]!=0)
+  {
+    #ifdef DEBUG
+      printf("Unlocked Failed. Value on 0x30 is %02X\n",AnsString[5]);
+    #endif
+    return -1;
+  }
+
+  #ifdef DEBUG
+    printf("EPROM Unlocked. Ready to write data\n");
+  #endif
+
+  return 1;
+
 }
 
 int SCServo::GetCurrentPos()
@@ -220,7 +320,7 @@ void SCServo::WriteData(int startAddr, int dataLength)
     printf("Servo #%02x Write Command\nData just sent:",CmdString[2]);
     for (t=0;t<dataLength+7;t++)
     {
-      printf("%02x:",CmdString[t]);
+      printf("%02X:",(unsigned char)(CmdString[t]&0xFF));
     }
     printf("End of Write Command\n");
   #endif
@@ -237,6 +337,7 @@ void SCServo::ReadData(int startAddr, int dataLength)
   write(serialPort,CmdString,8);
   usleep(RES_DELAY);
   int result=GetAnswer();
+
 }
 
 
@@ -249,6 +350,9 @@ BIT |status   |Description            |
 5   |Overload |                       |
 2   |Overhead |                       |
 0   |Voltage  |Voltage is out of range|
+---------------------------------------
+if return 0xFF, means serial port reading error or Servo
+NOT found.
 *********************************************************/
 unsigned char SCServo::Ping()
 {
@@ -271,7 +375,7 @@ unsigned char SCServo::Ping()
   {
     //TODO:Here should handle the error
     printf("Ping():Servo #%02x serial port reading error! Result code is %d\n",CmdString[2],result);
-    return 0;
+    return 0xFF;
   }
 
   return AnsString[4];
@@ -338,20 +442,20 @@ char SCServo::ChkSum()
   int counter=0;
   int length=(int)CmdString[3];
   unsigned char ch;
-  #ifdef DEBUG
+  #ifdef DEBUG2
     printf("ChkSum():Servo %02X Data to be checked:",CmdString[2]);
   #endif
 
   for (counter=0;counter<=length;counter++)
   {
     ch=CmdString[counter+2];
-    #ifdef DEBUG
+    #ifdef DEBUG2
       printf("%02x:",ch);
     #endif
     sum+=(int)ch;
   }
   ch=(unsigned char)(~(sum&0xFF));
-  #ifdef DEBUG
+  #ifdef DEBUG2
     printf("\nChecksum is:%02X\n",ch);
   #endif
   return ch;

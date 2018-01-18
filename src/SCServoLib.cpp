@@ -148,6 +148,9 @@ int SCServo::SetPos(int targetPos)
 {
   CmdString[6]=(char)(targetPos>>8);
   CmdString[7]=(char)(targetPos&0xFF);
+  #ifdef DEBUG2
+    printf("SetPos(): H:%02X\tL:%02X\n",CmdString[6],CmdString[7]);
+  #endif
   WriteData(TARGET_POS_H,2);
   return 1;
 }
@@ -290,9 +293,48 @@ int SCServo::GetCurrentPos()
 {
   int currentPos=-1;
   ReadData(CURRENT_POS_H,2);
-  currentPos=CtlTable[CURRENT_POS_H]<<8;
-  currentPos+=CtlTable[CURRENT_POS_L];
+//  currentPos=CtlTable[CURRENT_POS_H]<<8;
+//  currentPos+=CtlTable[CURRENT_POS_L];
+  currentPos=AnsString[5]<<8;
+  currentPos+=AnsString[6];
+
   return currentPos;
+}
+
+int SCServo::GetCurrentVersion()
+{
+  int version=-1;
+  ReadData(VERSION_H,2);
+  version=AnsString[5]<<8;
+  version+=AnsString[6];
+  return version;
+}
+
+int SCServo::GetMinAngle()
+{
+  int minAngle=-1;
+  ReadData(MIN_ANGLE_H,2);
+  minAngle=AnsString[5]<<8;
+  minAngle+=AnsString[6];
+  return minAngle;
+}
+
+int SCServo::GetMaxAngle()
+{
+  int maxAngle=-1;
+  ReadData(MAX_ANGLE_H,2);
+  maxAngle=AnsString[5]<<8;
+  maxAngle+=AnsString[6];
+  return maxAngle;
+}
+
+int SCServo::GetMaxTorque()
+{
+  int maxTorque=-1;
+  ReadData(MAX_TORQUE_H,2);
+  maxTorque=AnsString[5]<<8;
+  maxTorque+=AnsString[6];
+  return maxTorque;
 }
 
 void SCServo::GetCtlTable()
@@ -337,6 +379,7 @@ void SCServo::ReadData(int startAddr, int dataLength)
   write(serialPort,CmdString,8);
   usleep(RES_DELAY);
   int result=GetAnswer();
+  //TODO: Should have a data verification handler
 
 }
 

@@ -1,5 +1,5 @@
 #define DEBUG 1
-//#define DEBUG2 1
+#define DEBUG2 1
 //Definition of commands
 #define CMD_PING        0x01
 #define CMD_READ        0x02
@@ -14,6 +14,13 @@
 #define VERSION_L     0x04
 #define SERVO_ID      0x05
 #define BUS_BAUDRATE  0x06
+#define MIN_ANGLE_H   0x09
+#define MIN_ANGLE_L   0x0A
+#define MAX_ANGLE_H   0x0B
+#define MAX_ANGLE_L   0x0C
+
+#define MAX_TORQUE_H  0x10
+#define MAX_TORQUE_L  0x11
 
 #define CURRENT_POS_H 0x38
 #define CURRENT_POS_L 0x39
@@ -61,7 +68,10 @@ public:
   int GetCurrentPos();  //return the current position of a servo
   int SetPos(int);      //Input parameter is the position of a servo. value is 0-1023
   int SetID(int);
-
+  int GetMinAngle();
+  int GetMaxAngle();
+  int GetMaxTorque();
+  int GetCurrentVersion();
   int SetBaudRate(int); //Baudrate is limited to 5 values. Please check the #define part or refer to the document.
                         //ex. myServo.SetBaudRate(115200);
 

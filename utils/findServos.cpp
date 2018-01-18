@@ -59,6 +59,7 @@ int main(int argc, char** argv)
 	int fd=SerialInit(devname,baudrate);
 	SCServo myServo;
 	int t=0;
+	int current_pos;
 
 	int counts=0;
 	int iDs[253];
@@ -98,7 +99,8 @@ int main(int argc, char** argv)
 		pingResult=myServo.Init(fd,servoid);
 		if (pingResult==1)
 		{
-			printf("Servo#%d found @%dbps\n",servoid,baudrate);
+			current_pos=myServo.GetCurrentPos();
+			printf("Servo#%d found @%dbps, current position is: %d\n",servoid,baudrate,current_pos);
 			iDs[counts]=servoid;
 			counts++;
 		}

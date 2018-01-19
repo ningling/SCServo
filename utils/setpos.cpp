@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <tclap/CmdLine.h>
 #include <SCServoLib.h>
+#define DELAY_TIME 1000000
 using namespace std;
 
 int main(int argc, char** argv)
@@ -65,7 +66,9 @@ int main(int argc, char** argv)
   int maxAngle;
   int maxTorque;
   int new_pos=-1;
-
+	#if DEBUG==2
+		printf("DEBUG is : %d",DEBUG);
+	#endif
 	if (servoid>253 || servoid<0)
 	{
 		printf("Error: Servo ID should be an integer in range 0~253. Your input is: %d\n",servoid);
@@ -85,22 +88,26 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-  cout<<"____________________________________________________________________"<<endl;
-  cout<<"ID\t|Position\t|Max Angle\t|Min Angle\t|Max Torque|"<<endl;
+	string tableHead="ID\t|Position\t|Max Angle\t|Min Angle\t|Max Torque\t|";
+	string lineSplitter(tableHead.length()+25,'_');
+  cout<<lineSplitter<<endl;
+  cout<<tableHead<<endl;
   currentPos=myServo.GetCurrentPos();
   minAngle=myServo.GetMinAngle();
   maxAngle=myServo.GetMaxAngle();
   maxTorque=myServo.GetMaxTorque();
-  cout<<servoid<<"\t|"<<currentPos<<"\t|"<<maxAngle<<"\t|";
-  cout<<minAngle<<"\t|"<<maxTorque<<"\t|"<<endl;
+  cout<<servoid<<"\t|"<<currentPos<<"\t\t|"<<maxAngle<<"\t\t|";
+  cout<<minAngle<<"\t\t|"<<maxTorque<<"\t\t|"<<endl;
+	cout<<lineSplitter<<endl;
 
   printf("Please input the new position for Servo%d@%d\n",servoid,baudrate);
   while (cin>>new_pos)
   {
     cin.clear();
-  	if (new_pos<0 || new_pos>1024)
+  	if (new_pos<minAngle || new_pos>maxAngle)
       break;
     myServo.SetPos(new_pos);
+		usleep(DELAY_TIME);
     currentPos=myServo.GetCurrentPos();
     printf("Current position is %d. Please input the new position for Servo%d@%d\n",currentPos,servoid,baudrate);
   }

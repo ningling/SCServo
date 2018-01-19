@@ -23,7 +23,7 @@ int VerifyBaudrate(int baudrate)
     case 38400:
       return 1;
     default:
-      #ifdef DEBUG2
+      #if LIBDEBUG<4
         printf("Baudrate %dbps NOT supported!\n",baudrate);
       #endif
       return -1;
@@ -77,7 +77,7 @@ int SerialInit(char *devName, int baudrate)
       speed=B38400;
       break;
     default:
-      #ifdef DEBUG
+      #if LIBDEBUG<4
         printf("baudrate are NOT one of the 5 candidates:\n");
         printf("1,000,000bps;500,000bps;115200bps;57,600bps and 38,400bps\n");
       #endif
@@ -88,14 +88,14 @@ int SerialInit(char *devName, int baudrate)
 
   if (fd < 0)
   {
-    #ifdef DEBUG
+    #if LIBDEBUG<4
       fprintf (stderr, "Unable to open serial device: %s\n", strerror (errno)) ;
     #endif
 
     return -1 ;
   }
 
-  #ifdef DEBUG
+  #if LIBDEBUG<3
     printf("Serial openned:%s@%d\n",devName,baudrate);
   #endif
   tcflush(fd,TCIOFLUSH);
@@ -138,7 +138,9 @@ int SCServo::Init(int fd, int ID)
   }
   else
   {
-    printf("SC Servo #%d init failed\n",ID);
+    #if LIBDEBUG<4
+      printf("SC Servo #%d init failed\n",ID);
+    #endif
     return -1;
   }
   return 1;
@@ -148,7 +150,7 @@ int SCServo::SetPos(int targetPos)
 {
   CmdString[6]=(char)(targetPos>>8);
   CmdString[7]=(char)(targetPos&0xFF);
-  #ifdef DEBUG2
+  #if LIBDEBUG<2
     printf("SetPos(): H:%02X\tL:%02X\n",CmdString[6],CmdString[7]);
   #endif
   WriteData(TARGET_POS_H,2);
@@ -177,7 +179,7 @@ int SCServo::SetID(int ID)
   ReadData(SERVO_ID,1);
   if (AnsString[2]!=ServoID)
   {
-    #ifdef DEBUG
+    #if LIBDEBUG<4
       printf("ID is NOT written. The current ID in 0x%2X is %d",SERVO_ID,AnsString[2]);
     #endif
     return -2;
@@ -219,7 +221,7 @@ int SCServo::SetBaudRate(int baudrate)
       baudrateID=BR38400;
       break;
     default:
-      #ifdef DEBUG
+      #if LIBDEBUG<4
         printf("baudrate are NOT one of the 5 candidates:\n");
         printf("1,000,000bps;500,000bps;115200bps;57,600bps and 38,400bps\n");
       #endif
@@ -251,13 +253,13 @@ int SCServo::Lock()
   ReadData(WRITE_PROTECT,1);
   if (AnsString[5]!=1)
   {
-    #ifdef DEBUG
+    #if LIBDEBUG<4
       printf("Locked Failed. Value on 0x30 is %02X\n",AnsString[5]);
     #endif
     return -1;
   }
 
-  #ifdef DEBUG
+  #if LIBDEBUG<3
     printf("EPROM Locked. EPROM is now write protected.\n");
   #endif
 
@@ -275,13 +277,13 @@ int SCServo::Unlock()
   ReadData(WRITE_PROTECT,1);
   if (AnsString[5]!=0)
   {
-    #ifdef DEBUG
+    #if LIBDEBUG<4
       printf("Unlocked Failed. Value on 0x30 is %02X\n",AnsString[5]);
     #endif
     return -1;
   }
 
-  #ifdef DEBUG
+  #if LIBDEBUG<3
     printf("EPROM Unlocked. Ready to write data\n");
   #endif
 
@@ -293,8 +295,6 @@ int SCServo::GetCurrentPos()
 {
   int currentPos=-1;
   ReadData(CURRENT_POS_H,2);
-//  currentPos=CtlTable[CURRENT_POS_H]<<8;
-//  currentPos+=CtlTable[CURRENT_POS_L];
   currentPos=AnsString[5]<<8;
   currentPos+=AnsString[6];
 
@@ -358,7 +358,7 @@ void SCServo::WriteData(int startAddr, int dataLength)
   usleep(RES_DELAY);
 
   //Here is just for debug usage;
-  #ifdef DEBUG
+  #if LIBDEBUG<2
     printf("Servo #%02x Write Command\nData just sent:",CmdString[2]);
     for (t=0;t<dataLength+7;t++)
     {
@@ -417,7 +417,9 @@ unsigned char SCServo::Ping()
   if (result<0)
   {
     //TODO:Here should handle the error
-    printf("Ping():Servo #%02x serial port reading error! Result code is %d\n",CmdString[2],result);
+    #if LIBDEBUG<4
+      printf("Ping():Servo #%02x serial port reading error! Result code is %d\n",CmdString[2],result);
+    #endif
     return 0xFF;
   }
 
@@ -428,7 +430,7 @@ int SCServo::GetAnswer()
 {
   int bytes=0;
   ioctl(serialPort,FIONREAD,&bytes);
-  #ifdef DEBUG
+  #if LIBDEBUG<2
     printf("FIONREAD=%d bytes",bytes);
   #endif
 
@@ -440,13 +442,13 @@ int SCServo::GetAnswer()
   {
 
     counter=read(serialPort,AnsString,4);
-    #ifdef DEBUG
+    #if LIBDEBUG<2
       printf("GetAnswer():Servo %02x Data Length is %d\n",AnsString[2],AnsString[3]);
     #endif
 
     counter=read(serialPort,AnsString+4,AnsString[3]);
 
-    #ifdef DEBUG
+    #if LIBDEBUG<2
       printf("GetAnswer():Totally %d data bytes are read:\n",counter);
     #endif
 
@@ -457,7 +459,7 @@ int SCServo::GetAnswer()
     //ID: 1 byte
     //Length: 1 byte
     int counter=AnsString[3]+4;
-    #ifdef DEBUG
+    #if LIBDEBUG<2
       for (int t=0;t<counter;t++)
       {
         ch=AnsString[t];
@@ -473,32 +475,35 @@ int SCServo::GetAnswer()
   }
   else
   {
-    printf("No response from serial port\n");
+    #if LIBDEBUG<4
+      printf("No response from serial port\n");
+    #endif
+
     return -1;
   }
   return 1;
 }
 
-char SCServo::ChkSum()
+unsigned char SCServo::ChkSum()
 {
   int sum=0;
   int counter=0;
   int length=(int)CmdString[3];
   unsigned char ch;
-  #ifdef DEBUG2
+  #if LIBDEBUG<2
     printf("ChkSum():Servo %02X Data to be checked:",CmdString[2]);
   #endif
 
   for (counter=0;counter<=length;counter++)
   {
     ch=CmdString[counter+2];
-    #ifdef DEBUG2
+    #if LIBDEBUG<2
       printf("%02x:",ch);
     #endif
     sum+=(int)ch;
   }
   ch=(unsigned char)(~(sum&0xFF));
-  #ifdef DEBUG2
+  #if LIBDEBUG<2
     printf("\nChecksum is:%02X\n",ch);
   #endif
   return ch;

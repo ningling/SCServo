@@ -1,5 +1,12 @@
-#define DEBUG 1
-#define DEBUG2 1
+/*
+LIBDEBUG is the switch for library debug message show. There are 3 levels of messages.
+Level 1: Most detailed messages, including the detail log for send and received messages from serial port.
+Level 2: ONLY success or failure messages
+Level 3: ONLY failure message sent
+Level 4: NO message print
+*/
+#define LIBDEBUG 3
+
 //Definition of commands
 #define CMD_PING        0x01
 #define CMD_READ        0x02
@@ -77,11 +84,11 @@ public:
 
 private:
   int serialPort;
-  char CtlTable[64];
-  char CmdString[256]; //A single command length for a SCS Servo should be limited to 255
-  char AnsString[256]; //An answer length should be limited to 255
+  unsigned char CtlTable[64];
+  unsigned char CmdString[256]; //A single command length for a SCS Servo should be limited to 255
+  unsigned char AnsString[256]; //An answer length should be limited to 255
   int GetAnswer(); //Get answer from serial port.
-  char ChkSum();
+  unsigned char ChkSum();
   void ReadData(int,int);
   void WriteData(int,int);
   void GetCtlTable();
